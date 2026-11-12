@@ -1,4 +1,4 @@
-const phrases = [
+export const phrases = [
   'Contigo florecen mis días',
   'Ojalá hoy te encuentre algo bonito',
   'Un poquito de sol para ti',

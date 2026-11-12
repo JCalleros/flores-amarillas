@@ -1,5 +1,5 @@
 import './style.css';
-import { addMessages } from './frases';
+import { addMessages, phrases } from './frases';
 import type { IPlanetScene } from './scene';
 
 const root = document.querySelector<HTMLElement>('.experience')!;
@@ -12,6 +12,8 @@ const toggleLabel = toggle.lastElementChild!;
 const restart = document.querySelector<HTMLButtonElement>('#restart')!;
 const heading = title.parentElement!;
 const controls = restart.parentElement!;
+const cameraTools = document.querySelector<HTMLElement>('#camera-controls')!;
+const cameraHint = document.querySelector<HTMLElement>('#camera-hint')!;
 const canvas = document.querySelector<HTMLCanvasElement>('.space')!;
 const fallback = document.querySelector<HTMLElement>('.planet-css')!;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -42,6 +44,7 @@ let _previousTime: number | undefined;
 let _elapsed = 0;
 
 const sceneModule = import('./scene').catch(() => undefined);
+const labelFont = document.fonts.load('650 60px "Quicksand Variable"').catch(() => []);
 
 function canAnimate(): boolean {
   return _started && !_paused && !reducedMotion.matches && !document.hidden;
@@ -54,8 +57,7 @@ function render(time: number): void {
     _elapsed += Math.min((time - _previousTime) / 1000, .1);
   }
   _previousTime = time;
-  messages.draw(_elapsed);
-  _scene?.draw(_elapsed);
+  drawScene();
   _frame = requestAnimationFrame(render);
 }
 
@@ -76,37 +78,56 @@ function syncPlayback(): void {
   _previousTime = undefined;
 }
 
+function drawScene(): void {
+  if (_scene) {
+    _scene.draw(reducedMotion.matches ? 0 : _elapsed, !reducedMotion.matches);
+  } else if (!reducedMotion.matches) {
+    messages.draw(_elapsed);
+  }
+}
+
+function redrawCamera(): void {
+  if (_started && !canAnimate() && !document.hidden) drawScene();
+}
+
 function fitScene(): void {
   if (!_started) return;
   const width = root.clientWidth;
   const height = root.clientHeight;
-  if (!reducedMotion.matches) {
+  if (!_scene && !reducedMotion.matches) {
     messages.resize(width, height, heading.offsetTop + heading.offsetHeight, controls.offsetTop);
-    messages.draw(_elapsed);
   }
   _scene?.resize(width, height, fallback.offsetWidth);
-  _scene?.draw(reducedMotion.matches ? 0 : _elapsed);
+  drawScene();
+}
+
+function showCamera(enabled: boolean): void {
+  root.dataset.webgl = String(enabled);
+  canvas.hidden = !enabled;
+  cameraTools.hidden = !enabled;
+  cameraHint.hidden = !enabled;
 }
 
 function useCssScene(): void {
-  root.dataset.webgl = 'false';
-  canvas.hidden = true;
+  const hadCanvasFocus = document.activeElement === canvas;
+  showCamera(false);
   const scene = _scene;
   _scene = undefined;
   syncPlayback();
   scene?.dispose();
+  fitScene();
+  if (hadCanvasFocus) title.focus({ preventScroll: true });
 }
 
 async function enableWebGL(): Promise<void> {
-  const module = await sceneModule;
+  const [module] = await Promise.all([sceneModule, labelFont]);
   if (!module || _rendererAttempted || !_started) return;
   _rendererAttempted = true;
   try {
-    _scene = module.createPlanetScene(canvas);
+    _scene = module.createPlanetScene(canvas, phrases, redrawCamera);
     if (!_scene) return;
+    showCamera(true);
     fitScene();
-    root.dataset.webgl = 'true';
-    canvas.hidden = false;
     syncPlayback();
   } catch {
     useCssScene();
@@ -119,8 +140,7 @@ function start(): void {
   root.dataset.view = 'dedication';
   welcome.inert = true;
   dedication.inert = false;
-  root.dataset.webgl = String(Boolean(_scene));
-  canvas.hidden = !_scene;
+  showCamera(Boolean(_scene));
   title.focus({ preventScroll: true });
   fitScene();
   syncPlayback();
@@ -132,8 +152,8 @@ function returnToWelcome(): void {
   _paused = false;
   _elapsed = 0;
   root.dataset.view = 'welcome';
-  root.dataset.webgl = 'false';
-  canvas.hidden = true;
+  showCamera(false);
+  _scene?.resetView();
   dedication.inert = true;
   welcome.inert = false;
   startButton.focus({ preventScroll: true });
@@ -145,6 +165,26 @@ restart.addEventListener('click', returnToWelcome);
 toggle.addEventListener('click', () => {
   _paused = !_paused;
   syncPlayback();
+});
+document.querySelector('#zoom-in')!.addEventListener('click', () => _scene?.zoom(.88));
+document.querySelector('#zoom-out')!.addEventListener('click', () => _scene?.zoom(1.14));
+document.querySelector('#center-view')!.addEventListener('click', () => _scene?.resetView());
+
+canvas.addEventListener('keydown', (event) => {
+  if (!_scene) return;
+  const step = Math.PI / 15;
+  switch (event.key) {
+    case 'ArrowLeft': _scene.moveCamera(-step, 0); break;
+    case 'ArrowRight': _scene.moveCamera(step, 0); break;
+    case 'ArrowUp': _scene.moveCamera(0, -step); break;
+    case 'ArrowDown': _scene.moveCamera(0, step); break;
+    case '+':
+    case '=': _scene.zoom(.88); break;
+    case '-': _scene.zoom(1.14); break;
+    case 'Home': _scene.resetView(); break;
+    default: return;
+  }
+  event.preventDefault();
 });
 canvas.addEventListener('webglcontextlost', useCssScene);
 document.addEventListener('visibilitychange', syncPlayback);

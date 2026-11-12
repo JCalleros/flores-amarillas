@@ -41,18 +41,6 @@ test('inicia, ajusta la escena y permite repetirla', async ({ page, hasTouch }) 
   );
   expect(messages.every(({ top, bottom }) => top >= layout.titleBottom && bottom <= layout.controlsTop)).toBe(true);
 
-  const firstPhrase = page.locator('.orbiting-message').first();
-  const pose = () => firstPhrase.evaluate((element) => {
-    const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
-    return { x: matrix.m41, y: matrix.m42, tilt: matrix.m13 };
-  });
-  const initial = await pose();
-  await expect.poll(async () => {
-    const current = await pose();
-    return Math.hypot(current.x - initial.x, current.y - initial.y);
-  }).toBeGreaterThan(14);
-  expect((await pose()).tilt).not.toBe(initial.tilt);
-
   for (let attempt = 0; attempt < 2; attempt++) {
     await pause.click();
     await expect(page.locator('.experience')).toHaveAttribute('data-running', 'false');
@@ -97,17 +85,11 @@ test('detiene el movimiento en segundo plano y recupera la escena si pierde WebG
   await expect(root).toHaveAttribute('data-running', 'false');
   await expect(page.locator('.dedication')).toHaveCSS('opacity', '1');
   const canvas = page.locator('canvas');
-  const motion = page.locator('.orbiting-message').first();
-  const position = () => motion.evaluate((message) => (message as HTMLElement).style.transform);
-  const stoppedPosition = await position();
-  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  expect(await position()).toBe(stoppedPosition);
   await page.evaluate(() => {
     Reflect.deleteProperty(document, 'hidden');
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await expect(root).toHaveAttribute('data-running', 'true');
-  await expect.poll(position).not.toBe(stoppedPosition);
 
   const lost = await canvas.evaluate((element) => {
     const extension = (element as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context');
@@ -118,4 +100,36 @@ test('detiene el movimiento en segundo plano y recupera la escena si pierde WebG
   await expect(root).toHaveAttribute('data-webgl', 'false');
   await expect(page.locator('.planet-css')).toBeVisible();
   await expect(page.getByRole('heading')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Acercar' })).toBeHidden();
+  const phrase = page.locator('.orbiting-message:visible').first();
+  const pose = () => phrase.evaluate((element) => (element as HTMLElement).style.transform);
+  const initial = await pose();
+  await expect.poll(pose).not.toBe(initial);
+});
+
+test('permite girar y acercar el universo incluso en pausa', async ({ page }, info) => {
+  test.skip(info.project.name !== 'chromium-desktop', 'La cámara WebGL se verifica en Chromium de escritorio');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Toca para iniciar' }).click();
+  await page.getByRole('button', { name: 'Pausar' }).click();
+  await expect(page.locator('.dedication')).toHaveCSS('opacity', '1');
+  const scene = page.locator('.space');
+  await expect(scene).toBeVisible();
+  const clip = { x: 483, y: 254, width: 400, height: 260 };
+  const frame = () => page.screenshot({ clip, timeout: 6000 });
+  const initial = await frame();
+
+  await page.mouse.move(680, 380);
+  await page.mouse.down();
+  await page.mouse.move(850, 475, { steps: 9 });
+  await page.mouse.up();
+  const rotated = await frame();
+  expect(rotated.equals(initial)).toBe(false);
+
+  await page.mouse.wheel(0, -440);
+  const zoomed = await frame();
+  expect(zoomed.equals(rotated)).toBe(false);
+
+  await page.getByRole('button', { name: 'Centrar vista' }).click();
+  expect((await frame()).equals(initial)).toBe(true);
 });

@@ -17,7 +17,7 @@
           <div class="planet-sphere"></div>
           <div class="ring ring-front"></div>
         </div>
-        <canvas class="space" aria-hidden="true" hidden></canvas>
+        <canvas class="space" tabindex="0" aria-label="Explorar el universo" aria-describedby="camera-hint keyboard-hint" hidden></canvas>
         <div class="floating-messages" aria-hidden="true"></div>
         <header class="dedication-header">
           <div class="ornament" aria-hidden="true">✦</div>
@@ -25,11 +25,21 @@
         </header>
         <ul class="screen-reader-only message-list" aria-label="Mensajes de la dedicatoria"></ul>
         <div class="scene-controls" aria-label="Controles de la dedicatoria" role="group">
+          <p class="camera-hint" id="camera-hint" hidden>
+            <span class="mouse-hint">Arrastra para girar · Rueda para acercar</span>
+            <span class="touch-hint">Desliza para girar · Pellizca para acercar</span>
+          </p>
+          <span class="screen-reader-only" id="keyboard-hint">Usa las flechas para girar, más y menos para ajustar el zoom e Inicio para centrar.</span>
+          <div class="camera-controls" id="camera-controls" role="group" aria-label="Vista del universo" hidden>
+            <button class="control camera-button" id="zoom-out" type="button" aria-label="Alejar" title="Alejar">−</button>
+            <button class="control camera-button" id="zoom-in" type="button" aria-label="Acercar" title="Acercar">+</button>
+            <button class="control camera-button" id="center-view" type="button" aria-label="Centrar vista" title="Centrar vista">⊙</button>
+          </div>
           <button class="control" id="toggle-motion" type="button">
             <span class="motion-icon" aria-hidden="true"></span><span>Pausar</span>
           </button>
-          <button class="control" id="restart" type="button">
-            <span class="restart-icon" aria-hidden="true">↺</span> Volver al inicio
+          <button class="control" id="restart" type="button" aria-label="Volver al inicio" title="Volver al inicio">
+            <span class="restart-icon" aria-hidden="true">↺</span><span class="restart-label">Volver al inicio</span>
           </button>
         </div>
       </section>

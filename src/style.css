@@ -37,7 +37,19 @@ button:focus-visible { outline: 2px solid #ffdc71; outline-offset: 5px; }
 }
 
 .sky, .space, .floating-messages { pointer-events: none; }
-.space { z-index: 2; }
+.space {
+  z-index: 2;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+  --title-zone: calc(var(--header-top) + var(--title-size) + var(--subtitle-size) + 21px);
+  mask-image: linear-gradient(to bottom,
+    transparent 0, #0002 var(--title-zone), #000 calc(var(--title-zone) + 36px),
+    #000 calc(100% - var(--controls-bottom) - 87px),
+    #0002 calc(100% - var(--controls-bottom) - 58px), transparent 100%);
+}
+.space:active { cursor: grabbing; }
+.space:focus-visible { outline: 2px solid #ffdc71; outline-offset: -4px; }
 .sky { opacity: .7; transition: opacity .65s; }
 [data-webgl='true'] .sky { opacity: 0; }
 .star {
@@ -180,7 +192,8 @@ button:focus-visible { outline: 2px solid #ffdc71; outline-offset: 5px; }
   aspect-ratio: 2 / 1;
   transform: rotate(-7deg);
 }
-[data-webgl='true'] .planet-css { visibility: hidden; }
+[data-webgl='true'] :is(.planet-css, .planet-halo) { visibility: hidden; }
+[data-webgl='true'] .orbiting-message { display: none; }
 .planet-sphere {
   position: absolute;
   left: 50%;
@@ -385,4 +398,36 @@ h1 strong {
   }
   .message-bank-left { left: 12px; }
   .message-bank-right { right: 12px; }
+}
+
+.camera-controls {
+  display: flex;
+  gap: 6px;
+}
+.camera-button {
+  width: 44px;
+  padding: 0;
+  font-size: 19px;
+  line-height: 1;
+}
+.camera-hint {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: #f0d2a0;
+  text-shadow: 0 1px 6px #090704;
+  pointer-events: none;
+}
+.touch-hint { display: none; }
+@media (pointer: coarse) {
+  .mouse-hint { display: none; }
+  .touch-hint { display: inline; }
+}
+@media (max-width: 450px) {
+  .scene-controls { gap: 5px; }
+  .camera-controls { gap: 4px; }
+  [data-webgl='true'] #toggle-motion { padding-inline: 8px; font-size: 12px; gap: 5px; }
+  [data-webgl='true'] #restart { width: 44px; padding: 0; }
+  [data-webgl='true'] .restart-label { display: none; }
 }
