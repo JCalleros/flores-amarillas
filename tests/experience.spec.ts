@@ -41,6 +41,18 @@ test('inicia, ajusta la escena y permite repetirla', async ({ page, hasTouch }) 
   );
   expect(messages.every(({ top, bottom }) => top >= layout.titleBottom && bottom <= layout.controlsTop)).toBe(true);
 
+  const firstPhrase = page.locator('.orbiting-message').first();
+  const pose = () => firstPhrase.evaluate((element) => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+    return { x: matrix.m41, y: matrix.m42, tilt: matrix.m13 };
+  });
+  const initial = await pose();
+  await expect.poll(async () => {
+    const current = await pose();
+    return Math.hypot(current.x - initial.x, current.y - initial.y);
+  }).toBeGreaterThan(14);
+  expect((await pose()).tilt).not.toBe(initial.tilt);
+
   for (let attempt = 0; attempt < 2; attempt++) {
     await pause.click();
     await expect(page.locator('.experience')).toHaveAttribute('data-running', 'false');
@@ -83,19 +95,19 @@ test('detiene el movimiento en segundo plano y recupera la escena si pierde WebG
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await expect(root).toHaveAttribute('data-running', 'false');
-  await expect(page.locator('.message').first()).toHaveCSS('animation-play-state', 'paused');
   await expect(page.locator('.dedication')).toHaveCSS('opacity', '1');
   const canvas = page.locator('canvas');
-  const motion = page.locator('.message').first();
-  const animationTime = () => motion.evaluate((message) => Number(message.getAnimations()[0]?.currentTime));
-  const stoppedTime = await animationTime();
-  expect(await animationTime()).toBe(stoppedTime);
+  const motion = page.locator('.orbiting-message').first();
+  const position = () => motion.evaluate((message) => (message as HTMLElement).style.transform);
+  const stoppedPosition = await position();
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  expect(await position()).toBe(stoppedPosition);
   await page.evaluate(() => {
     Reflect.deleteProperty(document, 'hidden');
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await expect(root).toHaveAttribute('data-running', 'true');
-  await expect.poll(animationTime).toBeGreaterThan(stoppedTime);
+  await expect.poll(position).not.toBe(stoppedPosition);
 
   const lost = await canvas.evaluate((element) => {
     const extension = (element as HTMLCanvasElement).getContext('webgl2')?.getExtension('WEBGL_lose_context');

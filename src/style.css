@@ -37,6 +37,7 @@ button:focus-visible { outline: 2px solid #ffdc71; outline-offset: 5px; }
 }
 
 .sky, .space, .floating-messages { pointer-events: none; }
+.space { z-index: 2; }
 .sky { opacity: .7; transition: opacity .65s; }
 [data-webgl='true'] .sky { opacity: 0; }
 .star {
@@ -154,6 +155,7 @@ button:focus-visible { outline: 2px solid #ffdc71; outline-offset: 5px; }
 }
 
 .dedication {
+  z-index: 1;
   visibility: hidden;
   opacity: 0;
   transition: opacity .65s ease, visibility 0s .65s;
@@ -173,6 +175,7 @@ button:focus-visible { outline: 2px solid #ffdc71; outline-offset: 5px; }
   background: radial-gradient(ellipse, #ffb21572 0%, #f396194d 20%, #cb670928 40%, #ae56080d 56%, transparent 71%);
 }
 .planet-css {
+  z-index: 2;
   width: var(--planet-width);
   aspect-ratio: 2 / 1;
   transform: rotate(-7deg);
@@ -208,6 +211,7 @@ button:focus-visible { outline: 2px solid #ffdc71; outline-offset: 5px; }
 }
 
 .dedication-header {
+  z-index: 4;
   position: absolute;
   inset: var(--header-top) 12px auto;
   display: grid;
@@ -251,6 +255,7 @@ h1 strong {
 }
 
 .scene-controls {
+  z-index: 4;
   position: absolute;
   inset: auto 10px var(--controls-bottom);
   display: flex;
@@ -283,53 +288,19 @@ h1 strong {
 }
 .restart-icon { font-size: 19px; line-height: 1; }
 
-.floating-messages {
-  --message-edge: clamp(14px, 4vw, 58px);
-  --ring-half-height: calc(var(--planet-width) * .27 + 9px);
-  --title-bottom: calc(var(--header-top) + var(--title-size) * 1.04 + var(--subtitle-size) * 1.04 + 38px);
-  --control-top: calc(var(--controls-bottom) + 55px);
-  overflow: hidden;
-}
-.message-bank {
-  position: absolute;
-  display: grid;
-  grid-auto-rows: minmax(0, 1fr);
-  align-items: center;
-  column-gap: 14px;
-}
-.message-bank-top, .message-bank-bottom {
-  inset-inline: var(--message-edge);
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-.message-bank-top {
-  top: var(--title-bottom);
-  bottom: calc(50% + var(--ring-half-height));
-}
-.message-bank-bottom {
-  top: calc(50% + var(--ring-half-height));
-  bottom: var(--control-top);
-}
-.message-bank-left, .message-bank-right {
-  inset-block: calc(50% - var(--ring-half-height));
-  width: max(0px, calc((100% - var(--planet-width)) * .5 - var(--message-edge) - 14px));
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.message-bank-left { left: var(--message-edge); }
-.message-bank-right { right: var(--message-edge); }
+.floating-messages { overflow: hidden; }
 
+.message-bank { display: none; }
 .message {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: .45em;
-  margin-inline: 4px;
+  gap: .42em;
   color: #ffe4a0;
-  font-size: var(--font);
+  font-size: 13px;
   font-weight: 650;
-  line-height: 1.12;
-  opacity: var(--alpha);
-  text-shadow: 0 0 8px #ffbd5180, 0 1px 2px #090704;
-  animation: drift var(--duration) var(--delay) ease-in-out infinite alternate;
+  line-height: 1.15;
+  text-shadow: 0 0 9px #ffbd5199, 0 1px 3px #090704;
 }
 .message > span {
   display: -webkit-box;
@@ -339,18 +310,29 @@ h1 strong {
 }
 .message::before {
   content: '✿';
-  color: #ffcb4d;
+  color: #ffcc59;
   font-size: .9em;
-  text-shadow: 0 0 8px #ffc22f;
+  text-shadow: 0 0 9px #ffc22f;
 }
-@keyframes drift {
-  from { transform: translate(0, 0) scale(.96); opacity: calc(var(--alpha) * .70); }
-  to { transform: translate(var(--drift-x), var(--drift-y)) scale(1.025); opacity: var(--alpha); }
+.orbiting-message {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: max-content;
+  max-width: min(24vw, 225px);
+  font-size: var(--size);
+  transform-origin: center;
 }
-[data-running='false'] :is(.ring, .message),
+.orbiting-message.in-front {
+  z-index: 3;
+  color: #fff1bd;
+}
+
+[data-running='false'] .ring,
 [data-view='dedication'] .flower,
 [data-hidden='true'] .flower { animation-play-state: paused; }
-[data-view='welcome'] :is(.ring, .message) { animation-name: none; }
+[data-view='welcome'] .ring { animation-name: none; }
 
 .screen-reader-only {
   position: absolute;
@@ -361,19 +343,9 @@ h1 strong {
   white-space: nowrap;
 }
 
-@media (max-width: 1120px) {
-  .message-bank-left, .message-bank-right { grid-template-columns: minmax(0, 1fr); }
-  :is(.message-bank-left, .message-bank-right) .message:nth-child(n+6) { display: none; }
-}
-@media (max-width: 680px) {
+@media (max-width: 680px), (max-height: 460px) {
   .experience { --header-top: max(28px, calc(env(safe-area-inset-top) + 12px)); }
-  .message-bank-top, .message-bank-bottom { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .message-bank-left, .message-bank-right,
-  .message-bank-bottom .message:nth-child(n+9) { display: none; }
-  .message { font-size: min(var(--font), 12px); }
-}
-@media (max-height: 560px) and (orientation: portrait) {
-  :is(.message-bank-top, .message-bank-bottom) .message:nth-child(n+5) { display: none; }
+  .orbiting-message { max-width: min(36vw, 148px); font-size: min(calc(var(--size) * .78), 12px); }
 }
 @media (max-height: 460px) and (orientation: landscape) {
   .experience {
@@ -384,19 +356,33 @@ h1 strong {
   .ornament { display: none; }
   h1 { margin-top: 0; }
   .start { gap: 12px; }
-  .message-bank-top, .message-bank-bottom { display: none; }
-  .message-bank-left, .message-bank-right {
-    display: grid;
-    inset-block: calc(var(--title-size) + var(--subtitle-size) + 22px) var(--control-top);
-  }
-  .message { font-size: min(var(--font), 11px); }
 }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
-  .message:not([data-still]) { display: none; }
-  .message { opacity: .88; }
+  .orbiting-message { display: none; }
+  .message-bank-top, .message-bank-bottom {
+    position: absolute;
+    z-index: 3;
+    inset-inline: 5%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    justify-items: center;
+  }
+  .message-bank-top { top: calc(50% - var(--planet-width) * .32 - 2em); }
+  .message-bank-bottom { top: calc(50% + var(--planet-width) * .32 + .5em); }
 }
-@media (prefers-reduced-motion: reduce) and (min-height: 461px),
-       (prefers-reduced-motion: reduce) and (orientation: portrait) {
-  .message-bank-left, .message-bank-right { display: none; }
+@media (prefers-reduced-motion: reduce) and (max-height: 460px) and (orientation: landscape) {
+  .message-bank-top, .message-bank-bottom { display: none; }
+  .message-bank-left, .message-bank-right {
+    position: absolute;
+    z-index: 3;
+    top: 30%;
+    display: grid;
+    width: calc((100% - var(--planet-width)) * .5 - 24px);
+    gap: 20px;
+  }
+  .message-bank-left { left: 12px; }
+  .message-bank-right { right: 12px; }
 }

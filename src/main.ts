@@ -10,11 +10,13 @@ const title = document.querySelector<HTMLHeadingElement>('#dedication-title')!;
 const toggle = document.querySelector<HTMLButtonElement>('#toggle-motion')!;
 const toggleLabel = toggle.lastElementChild!;
 const restart = document.querySelector<HTMLButtonElement>('#restart')!;
+const heading = title.parentElement!;
+const controls = restart.parentElement!;
 const canvas = document.querySelector<HTMLCanvasElement>('.space')!;
 const fallback = document.querySelector<HTMLElement>('.planet-css')!;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-addMessages(
+const messages = addMessages(
   document.querySelector<HTMLElement>('.floating-messages')!,
   document.querySelector<HTMLElement>('.message-list')!,
 );
@@ -47,12 +49,13 @@ function canAnimate(): boolean {
 
 function render(time: number): void {
   _frame = undefined;
-  if (!canAnimate() || !_scene) return;
+  if (!canAnimate()) return;
   if (_previousTime !== undefined) {
     _elapsed += Math.min((time - _previousTime) / 1000, .1);
   }
   _previousTime = time;
-  _scene.draw(_elapsed);
+  messages.draw(_elapsed);
+  _scene?.draw(_elapsed);
   _frame = requestAnimationFrame(render);
 }
 
@@ -64,7 +67,7 @@ function syncPlayback(): void {
   toggle.hidden = reducedMotion.matches;
   toggleLabel.textContent = _paused ? 'Reanudar' : 'Pausar';
 
-  if (animate && _scene) {
+  if (animate) {
     _frame ??= requestAnimationFrame(render);
     return;
   }
@@ -74,9 +77,15 @@ function syncPlayback(): void {
 }
 
 function fitScene(): void {
-  if (!_scene || !_started) return;
-  _scene.resize(root.clientWidth, root.clientHeight, fallback.offsetWidth);
-  _scene.draw(reducedMotion.matches ? 0 : _elapsed);
+  if (!_started) return;
+  const width = root.clientWidth;
+  const height = root.clientHeight;
+  if (!reducedMotion.matches) {
+    messages.resize(width, height, heading.offsetTop + heading.offsetHeight, controls.offsetTop);
+    messages.draw(_elapsed);
+  }
+  _scene?.resize(width, height, fallback.offsetWidth);
+  _scene?.draw(reducedMotion.matches ? 0 : _elapsed);
 }
 
 function useCssScene(): void {
@@ -143,5 +152,8 @@ reducedMotion.addEventListener('change', () => {
   syncPlayback();
   fitScene();
 });
-new ResizeObserver(fitScene).observe(root);
+const layoutObserver = new ResizeObserver(fitScene);
+layoutObserver.observe(root);
+layoutObserver.observe(heading);
+layoutObserver.observe(controls);
 syncPlayback();
