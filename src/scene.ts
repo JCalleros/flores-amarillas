@@ -50,8 +50,9 @@ function createRingMaterial(): ShaderMaterial {
       void main() {
         float band = (length(vRing) - uInner) / (uOuter - uInner);
         float streaks = sin(band * 210.0) * 0.025 + sin(band * 82.0) * 0.045;
-        float gaps = exp(-pow((band - 0.61) * 34.0, 2.0)) * 0.23
-          + exp(-pow((band - 0.84) * 43.0, 2.0)) * 0.14;
+        float innerGap = (band - 0.61) * 34.0;
+        float outerGap = (band - 0.84) * 43.0;
+        float gaps = exp(-innerGap * innerGap) * 0.23 + exp(-outerGap * outerGap) * 0.14;
         float innerGlow = exp(-band * 5.8);
         float edge = smoothstep(0.88, 0.99, band);
         float shade = 0.86 + 0.14 * dot(normalize(vRing), normalize(vec2(-0.8, -0.6)));
