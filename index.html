@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#090704">
+    <meta name="description" content="Una dedicatoria de flores amarillas bajo un cielo de estrellas.">
+    <title>Feliz Día de las Flores Amarillas</title>
+  </head>
+  <body>
+    <main class="experience" data-view="welcome" data-running="false">
+      <div class="sky" aria-hidden="true"></div>
+      <section class="dedication" aria-labelledby="dedication-title" inert>
+        <div class="planet-halo" aria-hidden="true"></div>
+        <div class="planet-css" aria-hidden="true">
+          <div class="ring ring-back"></div>
+          <div class="planet-sphere"></div>
+          <div class="ring ring-front"></div>
+        </div>
+        <canvas class="space" aria-hidden="true" hidden></canvas>
+        <div class="floating-messages" aria-hidden="true"></div>
+        <header class="dedication-header">
+          <div class="ornament" aria-hidden="true">✦</div>
+          <h1 id="dedication-title" tabindex="-1">Feliz Día de las <strong>Flores Amarillas</strong></h1>
+        </header>
+        <ul class="screen-reader-only message-list" aria-label="Mensajes de la dedicatoria"></ul>
+        <div class="scene-controls" aria-label="Controles de la dedicatoria" role="group">
+          <button class="control" id="toggle-motion" type="button">
+            <span class="motion-icon" aria-hidden="true"></span><span>Pausar</span>
+          </button>
+          <button class="control" id="restart" type="button">
+            <span class="restart-icon" aria-hidden="true">↺</span> Volver al inicio
+          </button>
+        </div>
+      </section>
+      <section class="welcome" aria-label="Bienvenida">
+        <button class="start" type="button">
+          <span class="flower" aria-hidden="true">
+            <span class="stem"></span>
+            <span class="leaf leaf-left"></span><span class="leaf leaf-right"></span>
+            <span class="petals"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i><i style="--i:9"></i><i style="--i:10"></i><i style="--i:11"></i><i style="--i:12"></i><i style="--i:13"></i></span>
+            <span class="flower-center"></span>
+            <span class="flower-sparkle sparkle-left">✦</span><span class="flower-sparkle sparkle-right">✦</span>
+          </span>
+          <span class="start-label">Toca para iniciar</span>
+        </button>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
