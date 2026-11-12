@@ -1,12 +1,12 @@
 import { CanvasTexture, Euler, Quaternion, Sprite, SpriteMaterial, SRGBColorSpace, type Vector3 } from 'three';
 
 const paths = [
-  { radius: 2.2, count: 8, tilt: .92, node: .38, slant: .4 },
-  { radius: 3.3, count: 10, tilt: -.75, node: -.55, slant: -.3 },
-  { radius: 4.4, count: 12, tilt: 1.04, node: .8, slant: .58 },
-  { radius: 5.6, count: 13, tilt: -.57, node: -.31, slant: -.5 },
-  { radius: 7, count: 15, tilt: .86, node: -.84, slant: -.25 },
-  { radius: 8.6, count: 16, tilt: -.91, node: .52, slant: .2 },
+  { radius: 2.2, tilt: .92, node: .38, slant: .4 },
+  { radius: 3.3, tilt: -.75, node: -.55, slant: -.3 },
+  { radius: 4.4, tilt: 1.04, node: .8, slant: .58 },
+  { radius: 5.6, tilt: -.57, node: -.31, slant: -.5 },
+  { radius: 7, tilt: .86, node: -.84, slant: -.25 },
+  { radius: 8.6, tilt: -.91, node: .52, slant: .2 },
 ];
 
 function makeLabel(phrase: string) {
@@ -50,16 +50,18 @@ function makeLabel(phrase: string) {
 }
 
 export function createTextOrbits(phrases: readonly string[]) {
-  const labels = phrases.map(makeLabel);
+  const labels = Array.from(new Set(phrases), makeLabel);
   const sprites: Sprite[] = [];
   const bands = paths.map((path, bandIndex) => {
     const plane = new Quaternion().setFromEuler(new Euler(path.tilt, path.node, path.slant, 'YXZ'));
-    const members = Array.from({ length: path.count }, (_, index) => {
-      const label = labels[(bandIndex * 11 + index) % labels.length];
+    const start = Math.floor(bandIndex * labels.length / paths.length);
+    const end = Math.floor((bandIndex + 1) * labels.length / paths.length);
+    const bandLabels = labels.slice(start, end);
+    const members = bandLabels.map((label, index) => {
       const sprite = new Sprite(label.material);
       const height = (.35 + (index * .618 % 1) * .23) * (bandIndex === 0 ? .85 : 1);
       sprites.push(sprite);
-      return { sprite, height, ratio: label.ratio, phase: (index + bandIndex * .29) * Math.PI * 2 / path.count };
+      return { sprite, height, ratio: label.ratio, phase: index * Math.PI * 2 / bandLabels.length + bandIndex * .58 };
     });
     return { plane, members, radius: path.radius, speed: .35 / Math.pow(path.radius / 2.2, .9) };
   });
