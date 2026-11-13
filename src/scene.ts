@@ -150,6 +150,7 @@ export function createPlanetScene(canvas: HTMLCanvasElement, phrases: readonly s
   const angles = new Spherical();
   const cameraAxis = new Vector3();
   let heightPerDepth = .06;
+  let widthPerDepth = .35;
   let fitDistance = 14;
   camera.position.copy(initialDirection).multiplyScalar(fitDistance);
 
@@ -178,7 +179,9 @@ export function createPlanetScene(canvas: HTMLCanvasElement, phrases: readonly s
       const desiredWidth = planetWidth * .84;
       const halfFov = Math.tan(Math.PI * camera.fov / 360);
       const nextDistance = ringRadius * height / (desiredWidth * halfFov);
-      heightPerDepth = (width <= 680 ? 40 : 63) * 2 * halfFov / height;
+      const unitsPerPixel = 2 * halfFov / height;
+      heightPerDepth = (width <= 680 ? 38 : 56) * unitsPerPixel;
+      widthPerDepth = Math.min(width * .6, 430) * unitsPerPixel;
       camera.position.multiplyScalar(nextDistance / fitDistance);
       fitDistance = nextDistance;
       camera.aspect = width / height;
@@ -194,7 +197,7 @@ export function createPlanetScene(canvas: HTMLCanvasElement, phrases: readonly s
       cameraAxis.copy(camera.position).normalize();
       halo.position.copy(cameraAxis).multiplyScalar(-1.15);
       stars.material.uniforms.uTime.value = elapsedSeconds;
-      text.draw(elapsedSeconds, animateText, cameraAxis, camera.position.length(), heightPerDepth);
+      text.draw(elapsedSeconds, animateText, cameraAxis, camera.position.length(), heightPerDepth, widthPerDepth);
       renderer.render(scene, camera);
     },
     moveCamera(horizontal, vertical) {

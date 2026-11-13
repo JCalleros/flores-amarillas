@@ -1,12 +1,19 @@
-import { CanvasTexture, Euler, Quaternion, Sprite, SpriteMaterial, SRGBColorSpace, type Vector3 } from 'three';
+import { CanvasTexture, Sprite, SpriteMaterial, SRGBColorSpace, type Vector3 } from 'three';
 
+const fullTurn = Math.PI * 2;
+const orbitSpeed = fullTurn / 34;
 const paths = [
-  { radius: 2.2, tilt: .92, node: .38, slant: .4 },
-  { radius: 3.3, tilt: -.75, node: -.55, slant: -.3 },
-  { radius: 4.4, tilt: 1.04, node: .8, slant: .58 },
-  { radius: 5.6, tilt: -.57, node: -.31, slant: -.5 },
-  { radius: 7, tilt: .86, node: -.84, slant: -.25 },
-  { radius: 8.6, tilt: -.91, node: .52, slant: .2 },
+  { radius: 3.5, altitude: -6.4, size: .38 },
+  { radius: 5.7, altitude: -5.0, size: .40 },
+  { radius: 7.5, altitude: -3.8, size: .42 },
+  { radius: 6.5, altitude: -2.7, size: .45 },
+  { radius: 4.9, altitude: -1.4, size: .48 },
+  { radius: 3.8, altitude: 0, size: .44 },
+  { radius: 5.4, altitude: 1.4, size: .48 },
+  { radius: 7.0, altitude: 2.7, size: .45 },
+  { radius: 7.7, altitude: 3.8, size: .42 },
+  { radius: 5.7, altitude: 5.0, size: .40 },
+  { radius: 4.1, altitude: 6.4, size: .38 },
 ];
 
 function makeLabel(phrase: string) {
@@ -14,14 +21,17 @@ function makeLabel(phrase: string) {
   const context = canvas.getContext('2d')!;
   const font = '650 60px "Quicksand Variable", sans-serif';
   context.font = font;
-  canvas.width = Math.ceil(context.measureText(phrase).width + 110);
-  canvas.height = 118;
+  const resolution = .65;
+  const width = context.measureText(phrase).width + 110;
+  canvas.width = Math.ceil(width * resolution);
+  canvas.height = Math.ceil(118 * resolution);
+  context.scale(resolution, resolution);
   context.font = font;
   context.textBaseline = 'middle';
   context.strokeStyle = '#643307';
   context.lineWidth = 2.2;
   context.strokeText(phrase, 84, 59);
-  context.shadowBlur = 16;
+  context.shadowBlur = 16 * resolution;
   context.shadowColor = '#ffbe25';
   context.fillStyle = '#fff1ac';
   context.fillText(phrase, 84, 59);
@@ -53,32 +63,31 @@ export function createTextOrbits(phrases: readonly string[]) {
   const labels = Array.from(new Set(phrases), makeLabel);
   const sprites: Sprite[] = [];
   const bands = paths.map((path, bandIndex) => {
-    const plane = new Quaternion().setFromEuler(new Euler(path.tilt, path.node, path.slant, 'YXZ'));
     const start = Math.floor(bandIndex * labels.length / paths.length);
     const end = Math.floor((bandIndex + 1) * labels.length / paths.length);
     const bandLabels = labels.slice(start, end);
     const members = bandLabels.map((label, index) => {
       const sprite = new Sprite(label.material);
-      const height = (.35 + (index * .618 % 1) * .23) * (bandIndex === 0 ? .85 : 1);
+      const height = path.size * (.84 + ((index + bandIndex) * .618 % 1) * .4);
       sprites.push(sprite);
-      return { sprite, height, ratio: label.ratio, phase: index * Math.PI * 2 / bandLabels.length + bandIndex * .58 };
+      return { sprite, height, ratio: label.ratio, phase: index * fullTurn / bandLabels.length + bandIndex * .37 };
     });
-    return { plane, members, radius: path.radius, speed: .35 / Math.pow(path.radius / 2.2, .9) };
+    return { ...path, members };
   });
 
   return {
     sprites,
-    draw(elapsed: number, visible: boolean, cameraAxis: Vector3, cameraDistance: number, heightPerDepth: number): void {
-      for (const { plane, members, radius, speed } of bands) {
+    draw(elapsed: number, visible: boolean, cameraAxis: Vector3, cameraDistance: number, heightPerDepth: number, widthPerDepth: number): void {
+      for (const { members, radius, altitude } of bands) {
         for (const { sprite, phase, height, ratio } of members) {
           sprite.visible = visible;
           if (!visible) continue;
-          const angle = phase + elapsed * speed;
-          sprite.position.set(radius * Math.cos(angle), radius * Math.sin(angle), 0).applyQuaternion(plane);
+          const angle = phase + elapsed * orbitSpeed;
+          sprite.position.set(radius * Math.cos(angle), altitude, radius * Math.sin(angle));
           const depth = cameraDistance - sprite.position.dot(cameraAxis);
           sprite.visible = depth > 0;
           if (sprite.visible) {
-            const apparentHeight = Math.min(height, depth * heightPerDepth);
+            const apparentHeight = Math.min(height, depth * heightPerDepth, depth * widthPerDepth / ratio);
             sprite.scale.set(apparentHeight * ratio, apparentHeight, 1);
           }
         }
